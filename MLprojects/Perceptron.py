@@ -1,94 +1,92 @@
-import matplotlib.pyplot as plt
 import random as r
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_blobs
 
-class Pessoa:
-    def __init__(self, ensino_medio_completo, emprego_formal):
-        self.ensino_medio_completo = ensino_medio_completo
-        self.emprego_formal = emprego_formal
+class Amostras:
+    def __init__(self, dados):
+        self.x1 = dados[0]
+        self.x2 = dados[1]
+       
+        
 
 class Perceptron:
-    def __init__(self, lista_entrada, lista_oraculo):
-        self.entrada = lista_entrada
-        self.oraculo = lista_oraculo
-        self._taxa = 0.1
+    def __init__(self, lista_treinamento, lista_oraculo):
+        self.lista_treinamento = lista_treinamento
+        self.lista_oraculo = lista_oraculo
+        self.score = []
+        self.taxa = 0.1
     
-    def inicializar_pesos(self):
-            self.peso1 = r.randint(0,5)
-            self.peso2 = r.randint(0,5)
-            self.bias = r.randint(0,5)
-        
+    def pesos_iniciais(self):
+        self.w1 = r.randint(0, 10)
+        self.w2 = r.randint(0, 10)
+        self.bias = r.randint(0, 10)
+    
     def somatorio(self, dado):
-        self.soma = 0
-        self.soma = (self.peso1*dado.ensino_medio_completo)+(self.peso2*dado.emprego_formal)+self.bias
+        soma = ((self.w1*dado.x1) + (self.w2*dado.x2) + self.bias)
+        return soma
     
-    def ativador(self, dado):
-        self.somatorio(dado)
-        if self.soma >= 0:
+    def ativador(self, soma):
+        if soma >= 0:
             return 1
         else:
             return 0
-        
-    def Aprendizado(self):
-        for i in range(15):
+    
+    def treinamento(self):
+        for i in range(10000):
             erro_total = 0
-            for indice, dado in enumerate(self.entrada):
-                temp = self.ativador(dado)
-                erro = self.oraculo[indice]-temp
-                erro_total += erro
-                self.peso1 = self.peso1+self._taxa*dado.ensino_medio_completo*erro
-                self.peso2 = self.peso2+self._taxa*dado.emprego_formal*erro
-                self.bias = self.bias+self._taxa*erro
+            for indice, dado in enumerate(self.lista_treinamento):
+                soma = self.somatorio(dado)
+                resposta = self.ativador(soma)
+                erro = self.lista_oraculo[indice]-resposta
+                if erro != 0:
+                    erro_total += abs(erro)
+                    self.w1 = self.w1 + self.taxa*erro*dado.x1
+                    self.w2 = self.w2 +self.taxa*erro*dado.x2
+                    self.bias = erro*self.taxa
+                      
             if erro_total == 0:
                 break
-                
+    
+    def calcular_score(self):
+        acertos = 0
+        for indice, dado in enumerate(self.lista_treinamento):
+            previsao = self.processar(dado)
+            if previsao == self.lista_oraculo[indice]:
+                acertos += 1
+        acuracia = (acertos/len(self.lista_treinamento))*100
+        return acuracia
+    
     def processar(self, entrada):
-        x = self.ativador(entrada)
+        temp = self.somatorio(entrada)
+        x = self.ativador(temp)
         return x
-
-def grafico(dado, dado2, x):
-    plt.figure("Perceptron")
-    plt.xlabel("Ensino médio completo")
-    plt.ylabel("Emprego Formal")
-    plt.grid(True)
-    plt.xlim(0,2)
-    plt.ylim(0,2)
-    x_lista = []
-    y_lista = []
-    for x_linha in range(-2, 4):
-        y_linha = -(dado2.peso1/dado2.peso2)*x_linha-(dado2.bias/dado2.peso2)
-        x_lista.append(x_linha)
-        y_lista.append(y_linha)
         
-    plt.plot(x_lista, y_lista)
-    if x:
-        plt.scatter(dado.ensino_medio_completo, dado.emprego_formal, c='green', s=100)
-    else:    
-        plt.scatter(dado.ensino_medio_completo, dado.emprego_formal, c='red', s=100)    
-    plt.show()    
+        
+        
+
+X, y = make_blobs(n_samples=100, centers=2, n_features=2, random_state=42)
+amostras = []
+lista_oraculo = []
+
+for coordenadas, rotulo in zip(X, y):
+    novo_ponto = Amostras(coordenadas)
+    novo_rotulo = rotulo
+    amostras.append(novo_ponto)
+    lista_oraculo.append(novo_rotulo)
+
+agente = Perceptron(amostras, lista_oraculo)
+agente.pesos_iniciais()
+agente.treinamento()
+
+novo_ponto = Amostras((3, 4))
+x = agente.processar(novo_ponto)
+grafico(X, y, agente, x, novo_ponto)
+print(f"Acurácia:{agente.calcular_score()}")
+
+
     
 
-def main():
-    pessoa1 = Pessoa(0,0)
-    pessoa2 = Pessoa(0,1)
-    pessoa3 = Pessoa(1,0)
-    pessoa4 = Pessoa(1,1)
-    pessoa5 = Pessoa(0,1)
-    pessoa6 = Pessoa(1,1)
-    pessoa7 = Pessoa(0,0)
-    
-    entradas = [
-        pessoa1, pessoa2, pessoa3, pessoa4, pessoa5, pessoa6, pessoa7
-    ]
-    respostas = [
-        0, 0, 0, 1, 0, 1, 0
-    ]
-    
-    agente = Perceptron(entradas, respostas)
-    agente.inicializar_pesos()
-    agente.Aprendizado()
-    
-    pessoa_teste = Pessoa(1,1)
-    x = agente.processar(pessoa_teste)
-    grafico(pessoa_teste, agente, x)
 
-main()
+    
+
+    
