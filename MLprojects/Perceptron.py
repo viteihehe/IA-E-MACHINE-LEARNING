@@ -80,7 +80,6 @@ agente.treinamento()
 
 novo_ponto = Amostras((3, 4))
 x = agente.processar(novo_ponto)
-grafico(X, y, agente, x, novo_ponto)
 print(f"Acurácia:{agente.calcular_score()}")
 
 
