@@ -1,205 +1,263 @@
 import random as r
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from sklearn.datasets import load_digits
 import math as m
 from sklearn.model_selection import train_test_split
 import numpy as np
+from abc import ABC, abstractmethod
 
-data = load_digits()
+#Carregando DataSet
+dados = load_digits()
 
+#Formula utilizada para ativação não linear
 def tanh(pu):
     x = ((m.exp(pu) - m.exp(-pu))/(m.exp(pu) + m.exp(-pu)))
     return x
 
-total_camada_oculta = 20
-total_camada_saida = 10
-
-class Camada_oculta:
-    
-    def __init__(self):
-        self._w = []
-        for i in range(64):
-            self._w.append(r.randint(-1, 1))
-        self._b1 = r.randint(-1, 1)
-        self._tax = 0.1
-        
-    def add(self, lista_entrada):
-        self.soma = 0
-        for i, info in enumerate(lista_entrada):
-            self.soma += (self._w[i]*info)
-        self.soma += self._b1
-        
-    def activation(self):
-        self.prectidion = tanh(self.soma)
-        return self.prectidion
-    
-    def update(self, erro_oculto, lista_entrada):
-        delta_oculto = erro_oculto * (1 - self.prectidion**2)
-        for i, info in enumerate(lista_entrada):
-            self._w[i] = self._w[i] + self._tax*info*delta_oculto
-        self._b1 += self._tax*delta_oculto
-
-class Camada_saida:
-    
-    def __init__(self):
-        self.w2 = []
-        for i in range(total_camada_oculta):
-            self.w2.append(r.randint(-1, 1))
-        self._b2 = r.randint(-1, 1)
-        self._tax = 0.1
-    
-    def add(self, saidas_camada_oculta):
-        self.somas = 0
-        for i in range(total_camada_oculta):
-            self.somas += (self.w2[i]*saidas_camada_oculta[i])
-        self.somas += self._b2
-    
-    def activator(self):
-        self.previsao = tanh(self.somas)
-        return self.previsao
-    
-    def updade(self, delta_saida, saidas_camada_oculta):
-        for i in range(total_camada_oculta):
-            self.w2[i] = self.w2[i] + self._tax*delta_saida*saidas_camada_oculta[i]
-        self._b2 += self._tax*delta_saida
-    
-    def exit(self, oraculo):
-        erro = oraculo-self.previsao
-        delta_saida = erro * (1 - self.previsao**2)
-        erros_ocultos = []
-        for i in range(total_camada_oculta):
-            erros_ocultos.append((delta_saida*self.w2[i]))
-        return delta_saida, erros_ocultos
-        
-def classificador(valor):
-    lista = []
+#Tranformando o Target (valor escalar) para um vetor
+def normalizacao_target(valor):
+    retorno = []
     for i in range(10):
         if i != valor:
-            lista.append(-1)
+            retorno.append(-1)
         else:
-            lista.append(1)
-    return lista
+            retorno.append(1)
+    return retorno
 
-def argmax(vetor):
+#Metodo que retorna o indice do neuronio com maior valor
+def argmax(lista):
     maior = -2
     indice = 0
     
-    for i, valor in enumerate(vetor):
-        if valor > maior:
+    for i, valor in enumerate(lista):
+        if maior < valor:
             maior = valor
             indice = i
     
     return indice
-            
+
+#Metodo para calculo de erro
+def media(oraculo, resultado):
+    soma = 0
+    for i in range(10):
+        soma += abs(oraculo[i] - resultado[i])
+    return soma/10
+
+quantidade_camada_oculta = 20
+
+#Classe abstrata de um neurônio artificial
+class Neuronio(ABC):
+    
+    #Inicialização de pesos e bias (Deve ocorrer de maneira aleatoria)
+    def __init__(self, total_pesos):
+        self.w = []
+        for i in range(total_pesos):
+            self.w.append(r.uniform(-1, 1))
+        self.b = r.uniform(-1, 1)
+        self.taxa = 0.1
+    
+    #Somatorio de pesos com o valor de entrada
+    def somatorio(self, lista_entrada):
+        self.soma = 0
+        for i, valor in enumerate(lista_entrada):
+            self.soma += self.w[i]*valor
+        self.soma += self.b
+    
+    #Ativação: tomada de decisão do neurônio
+    def ativador(self):
+        self.previsao = tanh(self.soma)
+        return self.previsao
+
+    #Atualização dos pesos: O verdadeiro aprendizado
+    @abstractmethod
+    def atualizar_pesos(self , a ,b):
+        pass
+
+#Primeira camada que processa as features e permite aprendizado não linear
+class CamadaOculta(Neuronio):
+    
+    def atualizar_pesos(self, erro_oculto, vetor_entrada):
+        delta_oculto = erro_oculto * (1 - self.previsao**2)
+        for i, valor in enumerate(vetor_entrada):
+            self.w[i] = self.w[i] + self.taxa*valor*delta_oculto
+        self.b = self.b + self.taxa*delta_oculto
+
+#Camada que fornece a saida
+class CamadaSaida(Neuronio):
+    
+    def atualizar_pesos(self, delta_saida, vetor_previsoes):
+        for i, valor in enumerate(vetor_previsoes):
+            self.w[i] = self.w[i] + self.taxa*valor*delta_saida
+        self.b  += self.taxa*delta_saida
+
+    def saida(self, oraculo):
+        erro = oraculo-self.previsao
+        delta_saida = erro * (1 - self.previsao**2)
+        erros_ocultos = []
+        for i in range(quantidade_camada_oculta):
+            erros_ocultos.append(delta_saida*self.w[i])
+        return delta_saida, erros_ocultos
+
 class RNA:
     
-    def __init__(self, lista_entrada, lista_oraculo, lista_classe_teste,lista_co, lista_cs, entradas_teste, entradas_teste_oraculo):
-        self.lista_entrada = lista_entrada
-        self.lista_oraculo = lista_oraculo
-        self.lista_classe_teste = lista_classe_teste
+    def __init__(self, entradas, oraculos, classe_oraculo ,entradas_teste, oraculos_teste, 
+            classe_oraculos_teste, lista_co, lista_cs):
         self.lista_co = lista_co
         self.lista_cs = lista_cs
+        self.entradas = entradas
+        self.oraculos = oraculos
+        self.classe_oraculo = classe_oraculo
         self.entradas_teste = entradas_teste
-        self.entradas_teste_oraculo = entradas_teste_oraculo
+        self.oraculos_teste = oraculos_teste
+        self.classe_teste = classe_oraculos_teste
         
-    
     def foward(self, entrada):
-        self.previsoes1 = []
-        self.previsoes2 = []
+        self.prev1 = []
+        self.prev2 = []
+        
         for co in self.lista_co:
-            co.add(entrada)
-            self.previsoes1.append(co.activator())
-        for i ,cs in enumerate(self.lista_cs):
-            cs.add(self.previsoes1)
-            self.previsoes2.append(cs.activator())
-        return self.previsoes2
+            co.somatorio(entrada)
+            self.prev1.append(co.ativador())
+        for i, cs in enumerate(self.lista_cs):
+            cs.somatorio(self.prev1)
+            self.prev2.append(cs.ativador())
+        return self.prev2
     
-    def bacward(self, entrada, oraculo):
-        vetor_aux = np.zeros(total_camada_oculta)
-        for j ,camada_saida in enumerate(self.lista_cs):
-            delta_saida, erros_ocultos = camada_saida.exit(oraculo[j])
-            camada_saida.update(delta_saida, self.previsoes1)
+    def backward(self, entrada, oraculo):
+        vetor_aux = np.zeros(quantidade_camada_oculta)
+        temp = []
+        
+        for i, cs in enumerate(self.lista_cs):
+            delta_saida, erros_ocultos = cs.saida(oraculo[i])
             vetor_aux += erros_ocultos
+            temp.append(delta_saida)
             
-        for i, camada in enumerate(self.lista_co):
-            camada.update(vetor_aux[i], entrada)
-        
+        for i, co in enumerate(self.lista_co):
+            co.atualizar_pesos(vetor_aux[i], entrada)
+            
+        for i, cs in enumerate(self.lista_cs):
+            cs.atualizar_pesos(temp[i], self.prev1)
+            
     def aprendizado(self):
-        for i, dado in enumerate(self.lista_entrada):
-            resultado = self.foward(dado)
-            temp = classificador(self.lista_oraculo[i])
-            erro += abs(temp-resultado)
-            lista = classificador(self.lista_oraculo[i])
-            self.bacward(dado, lista)
-        return erro
+        erro_amostra = 0
+        for i, dado in enumerate(self.entradas):
+           resultado = self.foward(dado)
+           self.backward(dado, self.classe_oraculo[i])
+           erro_amostra += media(self.classe_oraculo[i], resultado)
+
+        return erro_amostra/len(self.entradas)
     
-    def erro_medio(self, erro):
-        erro_total = 0
-        for i in erro:
-            erro_total += i
-        self.erros.append((erro_total/len(self.lista_entrada)))
-        return self.erros
-    
-    def score(self, entrada_teste,entrada_classe):
+    def score(self, entrada, classe):
         acertos = 0
-        for i, dado in enumerate(entrada_teste):
-            x = self.foward(dado)
-            indice = argmax(x)
-            if indice == entrada_classe[i]:
+        for i, dado in enumerate(entrada):
+            resultado = self.foward(dado)
+            x = argmax(resultado)
+            
+            if x == classe[i]:
                 acertos += 1
-        
-        acuracia_total = (acertos/len(entrada_classe))
-        return acuracia_total
-                
-    def acuracia_por_geracao(self):
-        self.acuracias.append(self.score(self.entradas_teste, self.lista_classe_teste))
-        return self.acuracias
-    
-    def tempo(self, geracao):
-        self.erro_medio = []
-        self.acuracia_por_geracao = []
-        melhor_erro = 99999999999
+            
+        acuracia_total = (acertos/len(entrada))
+        return acuracia_total*100
+      
+    def geracao(self, tempo):
+        self.erros_medio_geracao = []
+        self.acuracia_geracao = []
+        erro = 0
         paciencia = 5
         contador = 0
+        melhor_erro = 99999999999999
         
-        for i in range(geracao):
-            erro = np.zeros(10)
-            erro += self.aprendizado()
-            
-            self.erro_medio(erro)
-            self.acuracia_por_geracao()
-            
+        for i in range(tempo):
+            erro = self.aprendizado()
+            self.erros_medio_geracao.append(erro)
+            self.acuracia_geracao.append(self.score(self.entradas_teste, self.oraculos_teste))
+
             if erro < melhor_erro:
                 melhor_erro = erro
                 contador = 0
             elif erro > melhor_erro:
                 contador += 1
-            elif contador >= paciencia:
-                return
-            
+            elif contador == paciencia:
+                return self.acuracia_geracao, self.erros_medio_geracao
+        
+        return self.acuracia_geracao, self.erros_medio_geracao
+    
+#Código de normalização feitor pelo gemini
 def normalizar(X_t, ret):
-    retorno = []
+    X_t = np.asanyarray(X_t).astype(np.float64) 
+    
+    if X_t.ndim == 1:
+        X_t = X_t.reshape(1, -1)
+
+    rows, cols = X_t.shape
+    
     if ret == 0:
-        for j in range(X_t.shape[1]):
-            mi = min(X_t[:, j])
-            ma = max(X_t[:, j])
-            retorno.append((mi, ma))
-            for i in range(X_t.shape[0]):
-                X_t[i, j] = 2*((X_t[i, j]-mi)/(ma-mi))-1
-        return retorno
+        parametros = []
+        for j in range(cols):
+            mi, ma = np.min(X_t[:, j]), np.max(X_t[:, j])
+            diff = ma - mi
+            parametros.append((mi, ma))
+            if diff != 0:
+                X_t[:, j] = 2 * ((X_t[:, j] - mi) / diff) - 1
+            else:
+                X_t[:, j] = 0.0
+        return X_t, parametros
     else:
-        for j in range(X_t.shape[1]):
+        for j in range(cols):
             mi, ma = ret[j]
-            for i in range(X_t.shape[0]):
-                X_t[i, j] = 2*((X_t[i, j]-mi)/(ma-mi))-1
+            diff = ma - mi
+            if diff != 0:
+                X_t[:, j] = 2 * ((X_t[:, j] - mi) / diff) - 1
+            else:
+                X_t[:, j] = 0.0
+        return X_t, None
                 
 def main():
-    X = data.data
-    y = data.target
-    X_train, y_train, X_test, y_teste = train_test_split(X, y, random_state=33, test_size=0.3)
-    ret = normalizar(X_train, 0)
-    normalizar(X_test, ret)
-    camada_oculta = []
-    camada_saida = []
+    X = dados.data
+    y = dados.target
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=39)
+    X_train, ret = normalizar(X_train, 0)
+    X_test, _ = normalizar(X_test, ret)
+    
+    lista_co = []
+    lista_cs = []
+    classe_teste = []
+    classe_treino = []
+    for i in y_train:
+        classe_treino.append(normalizacao_target(i))
+    for i in y_test:
+        classe_teste.append(normalizacao_target(i))
+        
+    for i in range(20):
+        co = CamadaOculta(64)
+        lista_co.append(co)
+    for i in range(10):
+        cs = CamadaSaida(quantidade_camada_oculta)
+        lista_cs.append(cs)
+        
+    bmo = RNA(X_train, y_train, classe_treino, X_test, y_test, classe_teste, lista_co, lista_cs)
+    acuracia, erros = bmo.geracao(108)
+    plt.figure("Erro") 
+    plt.plot(erros, color='red')
+    plt.title("Evolução do Erro")
+    plt.xlabel("Gerações")
+    plt.ylabel("Erro")
+    plt.xlim(0, len(erros)-1)
+    plt.ylim(0, max(erros) * 1.1)
+
+    
+    plt.figure("Acurácia")
+    plt.plot(acuracia, color='blue')
+    plt.title("Acurácia x Geração")
+    plt.xlabel("Gerações") 
+    plt.ylabel("Acurácia")
+    plt.xlim(0, len(acuracia)-1)
+    plt.ylim(0, max(acuracia) * 1.1)
+    plt.show()
+    for i in range(108):
+        print(f"Acurácia geração {i}: {acuracia[i]:.2f}")
+
+main()
     
     
