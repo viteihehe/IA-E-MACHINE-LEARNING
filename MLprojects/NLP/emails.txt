@@ -1,0 +1,41 @@
+spam	ganhe dinheiro agora
+spam	oferta imperdível só hoje
+spam	clique aqui para prêmio exclusivo
+spam	parabéns você foi selecionado
+spam	dinheiro fácil e rápido
+spam	promoção especial limitada
+spam	ganhe bônus imediato
+spam	invista agora e dobre seu lucro
+spam	última chance oferta única
+spam	crédito aprovado na hora
+spam	você ganhou um prêmio
+spam	descubra como ganhar renda extra
+spam	clique para resgatar recompensa
+spam	aproveite desconto exclusivo
+spam	seja seu próprio chefe
+spam	renda garantida sem esforço
+spam	trabalhe de casa e ganhe muito
+spam	oferta especial para você
+spam	não perca essa oportunidade
+spam	cadastre-se e receba bônus
+
+nao_spam	reunião amanhã às dez
+nao_spam	projeto será entregue hoje
+nao_spam	enviei o relatório atualizado
+nao_spam	podemos remarcar a reunião
+nao_spam	confirmando presença no evento
+nao_spam	o prazo termina sexta-feira
+nao_spam	precisamos revisar o documento
+nao_spam	segue anexo o arquivo solicitado
+nao_spam	vamos discutir o planejamento
+nao_spam	estarei ausente amanhã
+nao_spam	relatório final está pronto
+nao_spam	qual o status do projeto
+nao_spam	agenda atualizada para hoje
+nao_spam	por favor revisar contrato
+nao_spam	reunião confirmada para segunda
+nao_spam	preciso de ajuda com o código
+nao_spam	atualização do sistema realizada
+nao_spam	enviar documentação necessária
+nao_spam	chamada agendada para amanhã
+nao_spam	análise concluída com sucesso

@@ -4,6 +4,7 @@ import math as m
 import numpy as np
 import pandas as pd
 
+
 dados = np.genfromtxt('dados.csv', delimiter=',', skip_header=1)
 tabela = pd.read_csv('dados.csv')
 
